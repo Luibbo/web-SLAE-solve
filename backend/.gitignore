@@ -1,0 +1,4 @@
+.env
+web-slae-env/
+__pycache__/
+*.pyc

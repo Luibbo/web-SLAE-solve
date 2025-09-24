@@ -1,0 +1,22 @@
+# FastAPI + Uvicorn
+fastapi
+uvicorn
+
+# База даних
+sqlalchemy
+alembic
+psycopg2-binary   
+
+# Аутентифікація
+python-jose
+pyjwt
+python-multipart
+passlib
+bcrypt
+
+# Утиліти
+python-dotenv
+httpx
+
+# Тести
+pytest
