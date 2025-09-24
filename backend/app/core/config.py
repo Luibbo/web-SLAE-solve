@@ -1,0 +1,19 @@
+import os 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+REDIS_URL = os.getenv("REDIS_URL")
+CELERY_BROKER = os.getenv("CELERY_BROKER", REDIS_URL)
+CELERY_BACKEND = os.getenv("CELERY_BACKEND", REDIS_URL)
+
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+
+MAX_COMPLEXITY = int(os.getenv("MAX_COMPLEXITY", "1000"))
+MAX_ESTIMATED_SECONDS = int(os.getenv("MAX_ESTIMATED_SECONDS", "1200"))
+MAX_CONCURRENT_TASKS_PER_USER = int(os.getenv("MAX_CONCURRENT_TASKS_PER_USER", "3"))
