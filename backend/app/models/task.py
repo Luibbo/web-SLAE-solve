@@ -15,7 +15,6 @@ class Task(Base):
     __tablename__ = "tasks"
     id = Column(String, primary_key=True, index=True) # uuid
     user_id = Column(Integer, nullable=False, index=True)
-    type = Column(String, nullable=False)
     params = Column(JSON, nullable=True)
     status = Column(String, default=TaskStatus.PENDING)
     progress = Column(Integer, default=0)
