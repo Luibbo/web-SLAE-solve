@@ -5,13 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from .models.task import Task, TaskStatus
 from .models.user import User
 from .db.session import engine, Base
-#from .api import api_router
+from .api.v1 import auth, tasks, users
 
 app = FastAPI()
 
 Base.metadata.create_all(engine) 
 
-
+app.include_router(auth.router)
 
 
 origins = [
