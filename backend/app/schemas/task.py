@@ -4,10 +4,11 @@ from datetime import datetime
 
 
 class TaskBase(BaseModel):
-    user_id: int
+    pass
 
 class TaskCreate(TaskBase):
-    params: dict = Field(default_factory=dict)
+    params: dict = Field(default_factory=dict,
+                         example={"n": 3, "values": [[1,2,3],[0,1,4],[5,6,0]]})
 
 class TaskOut(TaskBase):
     id: str

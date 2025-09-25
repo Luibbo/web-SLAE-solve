@@ -1,6 +1,10 @@
-# FastAPI + Uvicorn
+# Основні бібліотеки
 fastapi
 uvicorn
+redis
+aioredis
+celery
+setuptools
 
 # База даних
 sqlalchemy

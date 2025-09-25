@@ -12,7 +12,7 @@ app = FastAPI()
 Base.metadata.create_all(engine) 
 
 app.include_router(auth.router)
-
+app.include_router(tasks.router)
 
 origins = [
     "http://localhost:3000",
