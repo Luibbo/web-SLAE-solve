@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse
 import redis
+import redis.asyncio as aioredis
 from typing import List
 from sqlalchemy.orm import Session
 from ...schemas.task import TaskCreate, TaskOut
@@ -17,11 +18,12 @@ import json
 from jose import jwt
 import time
 from datetime import datetime, timezone
+import random
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 
 # Redis clients
-redis_sync = redis.Redis.from_url(REDIS_URL)
-redis_async = redis.asyncio.from_url(REDIS_URL)
+redis_sync = redis.from_url(REDIS_URL)
+redis_async = aioredis.from_url(REDIS_URL)
 
 # Celery app
 celery_app = Celery("tasks", broker=CELERY_BROKER, backend=CELERY_BACKEND)
@@ -33,13 +35,14 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     if active >= MAX_CONCURRENT_TASKS_PER_USER:
         raise HTTPException(status_code=429, detail="too_many_concurrent_tasks")
 
-    print("!111111111")
+    if "n" not in payload.params and "values" not in payload.params:
+        n = 100
+        payload.params["n"] = n
+        payload.params["values"] = [[random.randint(0, 10) for _ in range(n)] for _ in range(n)]
 
     complexity, est = compute_complexity(payload.params)
     if complexity > MAX_COMPLEXITY or est > MAX_ESTIMATED_SECONDS:
         raise HTTPException(status_code=400, detail="task_too_complex")
-
-    print("!2222222222")
 
     task_id = str(uuid.uuid4())
     task = Task(id=task_id, user_id=current_user.id, params=payload.params, status=TaskStatus.PENDING, complexity_metric=complexity, estimated_seconds=est)
@@ -47,7 +50,6 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     db.commit()
     db.refresh(task)
 
-    print("!33333333333")
     celery_app.send_task("fastapi_long_tasks_example.run_task", args=[task_id])
     
     return {"task_id": task_id}
@@ -99,23 +101,22 @@ def cancel_task(task_id: str, current_user: User = Depends(get_current_user), db
 @router.websocket("/api/v1/ws/tasks/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = None):
     # token can be passed as query param: ?token=...
-    if token is None:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-    # validate token
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email = int(payload.get("sub"))
-        try:
-            user = db.query(User).filter(User.email == user_email).first()
-            if not user:
-                await websocket.close(code=status.WS_1008_POLICY_VIOLATION) # dont know if is okay here
-                return
-        finally:
-            db.close() # dont know if is okay here
+        user_email = payload.get("sub")
     except Exception:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+    finally:
+        db.close()
+ 
     await websocket.accept()
     channel = f"task:{task_id}"
     try:
@@ -170,12 +171,16 @@ def run_task(task_id: str):
         task = db.query(Task).filter(Task.id == task_id).first()
         if not task:
             return
+        print(f"Starting task: {task_id}")
+
     # re-check complexity
         if task.complexity_metric > MAX_COMPLEXITY:
             task.status = TaskStatus.REJECTED
             db.commit()
             redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.REJECTED}))
             return
+        
+        print(f"Task {task_id} complexity ok")
         task.status = TaskStatus.RUNNING
         task.started_at = datetime.now(timezone.utc)
         db.commit()
