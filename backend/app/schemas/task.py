@@ -1,14 +1,14 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
-
+from ..utils.utility import read_matrix_from_file
 
 class TaskBase(BaseModel):
     pass
 
 class TaskCreate(TaskBase):
     params: dict = Field(default_factory=dict,
-                         example={"n": 3, "values": [[1,2,3],[0,1,4],[5,6,0]]})
+                         example={"n": 3, "values": [[1,2,3],[4,5,6],[7,8,9]]})
 
 class TaskOut(TaskBase):
     id: str
