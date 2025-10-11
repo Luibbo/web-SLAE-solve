@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
-from ..utils.utility import read_matrix_from_file
+from app.utils.utility import read_matrix_from_file
 
 class TaskBase(BaseModel):
     pass

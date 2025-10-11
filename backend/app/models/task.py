@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Text
 from datetime import datetime, timezone
-from ..db.session import Base
+from app.db.session import Base
 
 class TaskStatus:
     PENDING = "pending"
