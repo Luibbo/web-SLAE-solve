@@ -3,12 +3,12 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from jwt.exceptions import InvalidTokenError
-from ...core.config import SECRET_KEY, ALGORITHM
-from ...schemas.token import Token, TokenData
-from ...schemas.user import UserCreate
-from ...models.user import User
-from ...db.dependency import get_db
-from ...core.security import create_access_token, get_password_hash, verify_password, oauth2_scheme
+from app.core.config import SECRET_KEY, ALGORITHM
+from app.schemas.token import Token, TokenData
+from app.schemas.user import UserCreate
+from app.models.user import User
+from app.db.dependency import get_db
+from app.core.security import create_access_token, get_password_hash, verify_password, oauth2_scheme
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -18,7 +18,8 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+    print(user_in.password, type(user_in.password))
+    print(len(user_in.password))
     user = User(email=user_in.email, hashed_password=get_password_hash(user_in.password))
     db.add(user)
     db.commit()

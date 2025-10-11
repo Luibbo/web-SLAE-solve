@@ -1,0 +1,30 @@
+# Основні бібліотеки
+fastapi
+uvicorn
+redis
+aioredis
+celery
+setuptools
+
+# База даних
+sqlalchemy
+alembic
+psycopg2-binary   
+
+# Аутентифікація
+python-jose
+pyjwt
+python-multipart
+passlib
+bcrypt
+
+# Утиліти
+python-dotenv
+httpx
+
+# Робота з даними
+numpy
+scipy
+
+# Тести
+pytest

@@ -1,0 +1,23 @@
+# Віртуальне середовище
+web-slae-env/
+venv/
+.env/
+
+# Git
+.git/
+.gitignore
+
+# Лог-файли
+*.log
+
+# Кеші Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# IDE та інше
+.vscode/
+.idea/

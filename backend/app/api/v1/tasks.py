@@ -4,15 +4,15 @@ import redis
 import redis.asyncio as aioredis
 from typing import List
 from sqlalchemy.orm import Session
-from ...schemas.task import TaskCreate, TaskOut
-from ...models.user import User
-from ...models.task import Task, TaskStatus
-from ...db.session import SessionLocal
-from ...db.dependency import get_db
-from ...core.config import MAX_CONCURRENT_TASKS_PER_USER, MAX_COMPLEXITY, MAX_ESTIMATED_SECONDS, REDIS_URL, CELERY_BROKER, CELERY_BACKEND, SECRET_KEY, ALGORITHM
+from app.schemas.task import TaskCreate, TaskOut
+from app.models.user import User
+from app.models.task import Task, TaskStatus
+from app.db.session import SessionLocal
+from app.db.dependency import get_db
+from app.core.config import MAX_CONCURRENT_TASKS_PER_USER, MAX_COMPLEXITY, MAX_ESTIMATED_SECONDS, REDIS_URL, CELERY_BROKER, CELERY_BACKEND, SECRET_KEY, ALGORITHM
 from celery import Celery
-from .auth import get_current_user
-from ...utils.utility import compute_complexity
+from app.api.v1.auth import get_current_user
+from app.utils.utility import compute_complexity
 import uuid
 import json
 from jose import jwt
@@ -98,7 +98,7 @@ def cancel_task(task_id: str, current_user: User = Depends(get_current_user), db
     return {"status": "cancelled"}
 
 
-@router.websocket("/api/v1/ws/tasks/{task_id}")
+@router.websocket("/ws/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = None):
     # token can be passed as query param: ?token=...
     try:
@@ -130,6 +130,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
                 await websocket.send_text(json.dumps({"error": "task_not_found"}))
                 await websocket.close()
                 return
+            print(f"Sending status: {task.status} and progress: {task.progress}")
             await websocket.send_text(json.dumps({"status": task.status, "progress": task.progress}))
         finally:
             db.close()
@@ -195,7 +196,7 @@ def run_task(task_id: str):
             if task.status == TaskStatus.CANCELLED:
                 redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.CANCELLED, "progress": task.progress}))
                 return
-    # perform a chunk of work (replace with actual computation)
+            # perform a chunk of work (replace with actual computation)
             time.sleep(max(0.01, task.estimated_seconds / steps))
             progress = int((i + 1) / steps * 100)
             task.progress = progress
