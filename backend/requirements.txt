@@ -1,6 +1,7 @@
 # Основні бібліотеки
 fastapi
 uvicorn
+uvicorn[standard]
 redis
 aioredis
 celery
@@ -16,7 +17,7 @@ python-jose
 pyjwt
 python-multipart
 passlib
-bcrypt
+bcrypt==4.3.0
 
 # Утиліти
 python-dotenv

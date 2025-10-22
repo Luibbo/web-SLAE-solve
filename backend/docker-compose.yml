@@ -41,13 +41,14 @@ services:
 
   worker:
     build: ./
-    container_name: worker
-    command: celery -A app.main.celery_app worker --loglevel=INFO
+    command: celery -A app.api.v1.tasks.celery_app worker --loglevel=INFO --concurrency=1
     environment:
       DATABASE_URL: postgresql+psycopg2://postgres:luib2006@postgres:5432/webslae
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER: redis://redis:6379/1
       CELERY_BACKEND: redis://redis:6379/2
+      MAX_COMPLEXITY: 1000000000
+      MAX_ESTIMATED_SECONDS: 3600
     depends_on:
       - postgres
       - redis
@@ -56,6 +57,7 @@ services:
     image: nginx:1.25
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     ports:
       - "80:80"
       - "443:443"

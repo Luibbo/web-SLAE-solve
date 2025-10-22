@@ -19,8 +19,11 @@ from jose import jwt
 import time
 from datetime import datetime, timezone
 import random
-router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
+import numpy as np
+from app.utils.gauss import gauss, swap
+import time
 
+router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 # Redis clients
 redis_sync = redis.from_url(REDIS_URL)
 redis_async = aioredis.from_url(REDIS_URL)
@@ -39,6 +42,11 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
         n = 100
         payload.params["n"] = n
         payload.params["values"] = [[random.randint(0, 10) for _ in range(n)] for _ in range(n)]
+        payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
+    elif 'n' in payload.params:
+        n = int(payload.params['n'])
+        payload.params["values"] = [[random.randint(0, 10) for _ in range(n)] for _ in range(n)]
+        payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
 
     complexity, est = compute_complexity(payload.params)
     if complexity > MAX_COMPLEXITY or est > MAX_ESTIMATED_SECONDS:
@@ -49,9 +57,9 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     db.add(task)
     db.commit()
     db.refresh(task)
-
+    print(f"Task Status: {task.status}-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
     celery_app.send_task("fastapi_long_tasks_example.run_task", args=[task_id])
-    
+    print(f"Task Status: {task.status}-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
     return {"task_id": task_id}
 
 
@@ -101,13 +109,14 @@ def cancel_task(task_id: str, current_user: User = Depends(get_current_user), db
 @router.websocket("/ws/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = None):
     # token can be passed as query param: ?token=...
+    print("------Trying decode token-------")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_email = payload.get("sub")
     except Exception:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
-
+    print("---------Decoded----------\n----------Trying to get user-----------")
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == user_email).first()
@@ -116,7 +125,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
             return
     finally:
         db.close()
- 
+    print("----------User got succesfully---------")
     await websocket.accept()
     channel = f"task:{task_id}"
     try:
@@ -124,8 +133,10 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
         await pubsub.subscribe(channel)
     # send last-known state from DB
         db = SessionLocal()
+
         try:
             task = db.query(Task).filter(Task.id == task_id, Task.user_id == user.id).first()
+
             if not task:
                 await websocket.send_text(json.dumps({"error": "task_not_found"}))
                 await websocket.close()
@@ -134,7 +145,6 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
             await websocket.send_text(json.dumps({"status": task.status, "progress": task.progress}))
         finally:
             db.close()
-
 
         async for message in pubsub.listen():
     # message: {'type': 'message', 'channel': b'task:...','data': b'...'}
@@ -166,6 +176,7 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
 
 @celery_app.task(name="fastapi_long_tasks_example.run_task")
 def run_task(task_id: str):
+    print(f"------------------Task is running-----------------")
     # This runs in worker process
     db = SessionLocal()
     try:
@@ -176,7 +187,8 @@ def run_task(task_id: str):
 
     # re-check complexity
         if task.complexity_metric > MAX_COMPLEXITY:
-            task.status = TaskStatus.REJECTED
+            task.status = TaskStatus.REJECTED 
+            print(f"----------Rejected-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
             db.commit()
             redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.REJECTED}))
             return
@@ -186,25 +198,80 @@ def run_task(task_id: str):
         task.started_at = datetime.now(timezone.utc)
         db.commit()
 
+        print("----------Loading Params---------")
+        n = int(task.params['n'])
+        A = np.asarray(task.params['values'], dtype=float)
+        b = np.asarray(task.params['b'], dtype=float)
+        n = A.shape[0]
+        print("---------Downloaded----------")
+        estimated_seconds = MAX_ESTIMATED_SECONDS
+        EPS = 10e-9
+        print("---------Starting Gauss----------")
+        for i in range(n):
+            progress = int( (i + 1) / n * 90)
+            start_time = time.time()
+            # check cancellation flag in DB
+            if i % max(1, int(n * 0.05)) == 0:
+                db.expire(task)
+                task = db.query(Task).filter(Task.id == task_id).first()
+                if task.status == TaskStatus.CANCELLED:
+                    redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.CANCELLED, "progress": task.progress}))
+                    return
 
-        # Simulate work split into steps; check for cancellation
-        steps = max(5, min(100, int(task.complexity_metric // 100 + 1)))
-        for i in range(steps):
-        # check cancellation flag in DB
-            db.expire(task)
-            task = db.query(Task).filter(Task.id == task_id).first()
-            if task.status == TaskStatus.CANCELLED:
-                redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.CANCELLED, "progress": task.progress}))
-                return
-            # perform a chunk of work (replace with actual computation)
-            time.sleep(max(0.01, task.estimated_seconds / steps))
-            progress = int((i + 1) / steps * 100)
-            task.progress = progress
+            if np.abs(A[i, i]) < EPS:
+                for k in range(i + 1, n):
+                    if np.abs(A[k, i]) > EPS:
+                        swap(A, b, i, k)
+                        break
+                else:
+                    raise ValueError("Matrix is singular or nearly singular (det=0)")
+
+            b[i] = b[i] / A[i, i]
+            A[i, :] = A[i, :] / A[i, i]
+            
+            for j in range(i + 1, n):
+                b[j] = b[j] - b[i] * A[j, i]
+                A[j, :] = A[j, :] - A[i, :] * A[j, i]
+
+            time.sleep(1)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            estimated_seconds = max(1, elapsed_time * (n - i))
+            
+            task.progress = min(90, progress)
+            task.estimated_seconds = estimated_seconds 
             db.commit()
-            redis_sync.publish(f"task:{task_id}", json.dumps({"progress": progress}))
+            redis_sync.publish(
+            f"task:{task_id}",
+            json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
+            )
+        print("Ended_Forward_Cycle")
+        print("Starting_Reverse_Cycle")
+        for i in range(n-1, -1, -1):
+            progress = int((n - i) / n * 10) + 90
+            start_time = time.time()
 
+            for j in range(i-1, -1, -1):
+                b[j] = b[j] - A[j, i] * b[i]
+                A[j, i] = 0 
 
-    # finished
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            estimated_seconds = max(1, elapsed_time * i)
+            
+            task.progress = min(99, progress)
+            task.estimated_seconds = estimated_seconds
+            db.commit()
+            redis_sync.publish(
+            f"task:{task_id}",
+            json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
+            )
+            print("Ended_Reversed_Cycle")
+
+        print("----------Ended Gauss-------------")
+        result = b
+
+        # finished
         task.status = TaskStatus.COMPLETED
         task.progress = 100
         task.finished_at = datetime.now(timezone.utc)
