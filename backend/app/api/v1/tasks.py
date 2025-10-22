@@ -12,7 +12,7 @@ from app.db.dependency import get_db
 from app.core.config import MAX_CONCURRENT_TASKS_PER_USER, MAX_COMPLEXITY, MAX_ESTIMATED_SECONDS, REDIS_URL, CELERY_BROKER, CELERY_BACKEND, SECRET_KEY, ALGORITHM
 from celery import Celery
 from app.api.v1.auth import get_current_user
-from app.utils.utility import compute_complexity
+from app.utils.utility import compute_complexity, swap
 import uuid
 import json
 from jose import jwt
@@ -20,7 +20,6 @@ import time
 from datetime import datetime, timezone
 import random
 import numpy as np
-from app.utils.gauss import gauss, swap
 import time
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])

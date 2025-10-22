@@ -21,4 +21,16 @@ def read_matrix_from_file(filepath: str) -> list[list[int]]:
     except FileNotFoundError:
         print("Error: 'matrix.txt' not found.")
     except ValueError:
-        print("Error: Data in 'matrix.txt' is not compatible with specified dtype or delimiter.")            
+        print("Error: Data in 'matrix.txt' is not compatible with specified dtype or delimiter.")      
+
+
+def swap(A: np.ndarray, b: np.ndarray, i, j):
+    tmp = A[i, :].copy()
+    A[i, :] = A[j, :]
+    A[j, :] = tmp
+
+    tmp = b[i]
+    b[i] = b[j]
+    b[j] = tmp
+
+    return A, b
