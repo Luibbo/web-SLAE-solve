@@ -3,3 +3,4 @@ web-slae-env/
 __pycache__/
 *.pyc
 test.db
+nginx/
