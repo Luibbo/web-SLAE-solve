@@ -16,9 +16,17 @@ const LoginSignup = () => {
         },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await response.json();
       console.log("✅ Registered:", data);
-      alert("Registered successfully! Token: " + data.access_token);
+
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        alert("Registered successfully!");
+      } else {
+        alert("Registration failed: No token received.");
+      }
+
     } catch (error) {
       console.error("❌ Registration error:", error);
     }
@@ -36,9 +44,17 @@ const LoginSignup = () => {
           password: password,
         }),
       });
+
       const data = await response.json();
       console.log("✅ Logged in:", data);
-      alert("Login successful! Token: " + data.access_token);
+
+      if (data.access_token) {
+        localStorage.setItem("token", data.access_token);
+        alert("Login successful!");
+      } else {
+        alert("Login failed: No token received.");
+      }
+
     } catch (error) {
       console.error("❌ Login error:", error);
     }
