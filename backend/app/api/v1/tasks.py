@@ -59,7 +59,7 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     print(f"Task Status: {task.status}-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
     celery_app.send_task("fastapi_long_tasks_example.run_task", args=[task_id])
     print(f"Task Status: {task.status}-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
-    return {"task_id": task_id}
+    return {"task_id": task_id, "params": task.params}
 
 
 @router.get("", response_model=List[TaskOut])
@@ -83,6 +83,7 @@ def get_task(task_id: str, current_user: User = Depends(get_current_user), db: S
     return TaskOut(**{"id": task.id,
                       "status": task.status, 
                       "progress": task.progress, 
+                      "params": task.params,
                       "complexity_metric": task.complexity_metric, 
                       "estimated_seconds": task.estimated_seconds, 
                       "created_at": task.created_at, 
@@ -138,6 +139,9 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
 
             if not task:
                 await websocket.send_text(json.dumps({"error": "task_not_found"}))
+                await websocket.close()
+                return
+            if task.status not in [TaskStatus.PENDING, TaskStatus.RUNNING]:
                 await websocket.close()
                 return
             print(f"Sending status: {task.status} and progress: {task.progress}")

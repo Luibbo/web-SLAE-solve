@@ -14,6 +14,7 @@ class TaskOut(TaskBase):
     id: str
     status: str
     progress: int
+    params: Optional[dict] = None
     complexity_metric: int
     estimated_seconds: int
     created_at: datetime
