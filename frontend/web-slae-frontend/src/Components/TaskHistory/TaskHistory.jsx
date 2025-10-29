@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchTasks, fetchTask, cancelTask } from "../../api";
 import { TaskCard } from "../TaskCard/TaskCard";
+import TaskDetails from "../TaskMetadata/TaskMetadata";
 
 export default function HomePage() {
   const [tasks, setTasks] = useState([]);
@@ -71,7 +72,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div style={{ flex: 1 }}>
+      {/* <div style={{ flex: 1 }}>
         <h2>Task Details</h2>
         {!selected ? <div>Select a task from the left</div> : (
           <>
@@ -93,6 +94,13 @@ export default function HomePage() {
             ) : <div>Loading detail...</div>}
           </>
         )}
+      </div> */}
+      <div style={{ flex: 1 }}>
+        <h2>Task Details</h2>
+        <TaskDetails taskId={selected} />
+        <div style={{ marginTop: 12 }}>
+          <button onClick={() => handleCancel(taskDetail.id)}>Cancel Task</button>
+        </div>
       </div>
     </div>
   );

@@ -19,7 +19,8 @@ export default function CreateTaskPage() {
     try {
       const res = await createTask(payload);
       alert("Task created: " + res.task_id);
-      navigate("/"); // back to home
+      console.log("Params", res.params)
+      navigate("/tasks"); // back to home
     } catch (err) {
       console.error(err);
       alert("Create failed");
@@ -34,11 +35,11 @@ export default function CreateTaskPage() {
       <form onSubmit={handleSubmit}>
         <div>
           <label>n (matrix size): </label>
-          <input type="number" value={n} onChange={(e) => setN(Number(e.target.value))} min={1} max={300} />
+          <input type="number" value={n} onChange={(e) => setN(Number(e.target.value))} min={1} max={1000} />
         </div>
         <div style={{ marginTop: 12 }}>
           <button type="submit" disabled={creating}>{creating ? "Creating..." : "Create"}</button>
-          <button type="button" onClick={() => navigate("/")}>Cancel</button>
+          <button type="button" onClick={() => navigate("/tasks")}>Back</button>
         </div>
       </form>
     </div>
