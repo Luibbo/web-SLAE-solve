@@ -1,0 +1,42 @@
+/* ===== Layout ===== */
+.tasks-layout {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    height: calc(100vh - 40px);
+    background: linear-gradient(to bottom right, #e2d4ff, #afd1ff);
+    color: #2e0066;
+    font-family: sans-serif;
+}
+
+/* ===== Task History ===== */
+.history-panel {
+    width: 320px;
+    background: #ffffffcc;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(0,0,0,0.1);
+}
+
+.header {
+    font-size: 22px;
+    font-weight: 800;
+    text-align: center;
+    color: #3c009d;
+    margin-bottom: 12px;
+}
+
+.history-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.history-list {
+    overflow-y: auto;
+    padding-right: 4px;
+}
