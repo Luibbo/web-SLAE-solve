@@ -13,6 +13,7 @@ from app.core.config import MAX_CONCURRENT_TASKS_PER_USER, MAX_COMPLEXITY, MAX_E
 from celery import Celery
 from app.api.v1.auth import get_current_user
 from app.utils.utility import compute_complexity, swap
+from sqlalchemy.orm.attributes import flag_modified
 import uuid
 import json
 from jose import jwt
@@ -40,11 +41,11 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     if "n" not in payload.params and "values" not in payload.params:
         n = 100
         payload.params["n"] = n
-        payload.params["values"] = [[random.randint(0, 10) for _ in range(n)] for _ in range(n)]
+        payload.params["values"] = [[random.randint(0, 15) for _ in range(n)] for _ in range(n)]
         payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
     elif 'n' in payload.params:
         n = int(payload.params['n'])
-        payload.params["values"] = [[random.randint(0, 10) for _ in range(n)] for _ in range(n)]
+        payload.params["values"] = [[random.randint(0, 15) for _ in range(n)] for _ in range(n)]
         payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
 
     complexity, est = compute_complexity(payload.params)
@@ -52,7 +53,7 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
         raise HTTPException(status_code=400, detail="task_too_complex")
 
     task_id = str(uuid.uuid4())
-    task = Task(id=task_id, user_id=current_user.id, params=payload.params, status=TaskStatus.PENDING, complexity_metric=complexity, estimated_seconds=est)
+    task = Task(id=task_id, user_id=current_user.id, params=payload.params, status=TaskStatus.PENDING, complexity_metric=complexity, estimated_seconds=est, created_at = datetime.now(timezone.utc))
     db.add(task)
     db.commit()
     db.refresh(task)
@@ -96,13 +97,13 @@ def cancel_task(task_id: str, current_user: User = Depends(get_current_user), db
     task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(status_code=404, detail="task_not_found")
-    if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
+    if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.REJECTED]:
         return {"status": "not_cancelable"}
     task.status = TaskStatus.CANCELLED
     task.cancelled_at = datetime.now(timezone.utc)
     db.commit()
 
-    redis_sync.publish(f"task:{task_id}", json.dumps({"status": "cancelled", "progress": task.progress}))
+    redis_sync.publish(f"task:{task_id}", json.dumps({"status": "cancelled", "progress": task.progress, "estimated_seconds": 0}))
     return {"status": "cancelled"}
 
 
@@ -188,10 +189,11 @@ def run_task(task_id: str):
             return
         print(f"Starting task: {task_id}")
 
+        if task.status != TaskStatus.PENDING:
+            return
     # re-check complexity
         if task.complexity_metric > MAX_COMPLEXITY:
             task.status = TaskStatus.REJECTED 
-            print(f"----------Rejected-----------Task Complexity: {task.complexity_metric}---------Max: {MAX_COMPLEXITY}")
             db.commit()
             redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.REJECTED}))
             return
@@ -201,16 +203,18 @@ def run_task(task_id: str):
         task.started_at = datetime.now(timezone.utc)
         db.commit()
 
-        print("----------Loading Params---------")
         n = int(task.params['n'])
         A = np.asarray(task.params['values'], dtype=float)
         b = np.asarray(task.params['b'], dtype=float)
         n = A.shape[0]
-        print("---------Downloaded----------")
         estimated_seconds = MAX_ESTIMATED_SECONDS
         EPS = 10e-9
-        print("---------Starting Gauss----------")
         for i in range(n):
+            if i == 1 and estimated_seconds > MAX_ESTIMATED_SECONDS:
+                task.status = TaskStatus.REJECTED 
+                db.commit()
+                redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.REJECTED}))
+                return
             progress = int( (i + 1) / n * 90)
             start_time = time.time()
             # check cancellation flag in DB
@@ -236,7 +240,7 @@ def run_task(task_id: str):
                 b[j] = b[j] - b[i] * A[j, i]
                 A[j, :] = A[j, :] - A[i, :] * A[j, i]
 
-            time.sleep(1)
+            time.sleep(1.35)
             end_time = time.time()
             elapsed_time = end_time - start_time
             estimated_seconds = max(1, elapsed_time * (n - i))
@@ -245,11 +249,10 @@ def run_task(task_id: str):
             task.estimated_seconds = estimated_seconds 
             db.commit()
             redis_sync.publish(
-            f"task:{task_id}",
-            json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
+                f"task:{task_id}",
+                json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
             )
-        print("Ended_Forward_Cycle")
-        print("Starting_Reverse_Cycle")
+
         for i in range(n-1, -1, -1):
             progress = int((n - i) / n * 10) + 90
             start_time = time.time()
@@ -259,28 +262,27 @@ def run_task(task_id: str):
                 A[j, i] = 0 
 
             end_time = time.time()
-            elapsed_time = end_time - start_time
-            estimated_seconds = max(1, elapsed_time * i)
-            
-            task.progress = min(99, progress)
-            task.estimated_seconds = estimated_seconds
-            db.commit()
-            redis_sync.publish(
-            f"task:{task_id}",
-            json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
-            )
-            print("Ended_Reversed_Cycle")
-
-        print("----------Ended Gauss-------------")
-        result = b
+            if (i+1 % (n/10)) == 0:
+                elapsed_time = end_time - start_time
+                estimated_seconds = max(1, elapsed_time * i)
+                
+                task.progress = min(99, progress)
+                task.estimated_seconds = estimated_seconds
+                db.commit()
+                redis_sync.publish(
+                    f"task:{task_id}",
+                    json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
+                )
 
         # finished
+        task.params['result'] = b.tolist()
         task.status = TaskStatus.COMPLETED
         task.progress = 100
+        task.estimated_seconds = 0
         task.finished_at = datetime.now(timezone.utc)
-        task.result_location = f"/results/{task_id}.json" # placeholder
+        flag_modified(task, "params")
         db.commit()
-        redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.COMPLETED, "progress": 100, "result": task.result_location}))
+        redis_sync.publish(f"task:{task_id}", json.dumps({"status": TaskStatus.COMPLETED, "progress": 100, "estimated_seconds": 0}))
     except Exception as e:
         try:
             task.status = TaskStatus.FAILED
