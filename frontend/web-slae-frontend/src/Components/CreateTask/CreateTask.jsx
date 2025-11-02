@@ -1,27 +1,92 @@
-// src/pages/CreateTaskPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createTask } from "../../api";
 import { useNavigate } from "react-router-dom";
 import "./CreateTask.css"
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();
-  const [n, setN] = useState(100);
+  const [n, setN] = useState(3);
+  const [A, setA] = useState([]);
+  const [b, setB] = useState([]);
   const [creating, setCreating] = useState(false);
+
+  // regenerate empty matrix/vector when n changes
+  useEffect(() => {
+    setA(Array.from({ length: n }, () => Array(n).fill("")));
+    setB(Array.from({ length: n }, () => ""));
+  }, [n]);
+
+  // const handleMatrixChange = (i, j, value) => {
+  //   const newA = [...A];
+  //   newA[i][j] = value;
+  //   setA(newA);
+  // };
+
+  // const handleVectorChange = (i, value) => {
+  //   const newB = [...b];
+  //   newB[i] = value;
+  //   setB(newB);
+  // };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   const payload = { params: { n, values: A, b } };
+
+  //   setCreating(true);
+  //   try {
+  //     const res = await createTask(payload);
+  //     alert("Task created: " + res.task_id);
+  //     navigate("/tasks");
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Create failed");
+  //   } finally {
+  //     setCreating(false);
+  //   }
+  // };
+
+  const handleSizeChange = (value) => {
+    const newN = Number(value);
+    setN(newN);
+
+    setA(Array(newN).fill(null).map(() => Array(newN).fill("")));
+    setB(Array(newN).fill(""));
+  };
+
+  const handleMatrixChange = (i, j, value) => {
+    const updated = [...A];
+    updated[i][j] = value;
+    setA(updated);
+  };
+
+  const handleVectorChange = (i, value) => {
+    const updated = [...b];
+    updated[i] = value;
+    setB(updated);
+  };
+
+  const isFullyFilled = () => {
+    return A.every(row => row.every(cell => cell !== "")) &&
+           b.every(cell => cell !== "");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // build a simple params object: matrix and vector
-    // const vals = Array.from({length: n}, () => Array.from({length: n}, () => Math.floor(Math.random() * 10)));
-    // const b = Array.from({length: n}, () => Math.floor(Math.random() * 21) - 10);
-    const payload = { params: { n} };
+
+    let payload = { params: { n }};
+    
+    if (isFullyFilled()) {
+      payload.params.values = A.map(row => row.map(Number));
+      payload.params.b = b.map(Number);
+    } else {
+      alert("The parameters were not entered completely - the matrix will be generated automatically");
+    }
 
     setCreating(true);
     try {
       const res = await createTask(payload);
       alert("Task created: " + res.task_id);
-      console.log("Params", res.params)
-      navigate("/tasks"); // back to home
+      navigate("/tasks");
     } catch (err) {
       console.error(err);
       alert("Create failed");
@@ -34,13 +99,64 @@ export default function CreateTaskPage() {
     <div className="create-form">
       <h2>Create Task</h2>
       <form onSubmit={handleSubmit}>
+        {/* N input */}
         <div>
           <label>n (matrix size): </label>
-          <input type="number" value={n} onChange={(e) => setN(Number(e.target.value))} min={1} max={1000} />
+          <input
+            type="number"
+            value={n}
+            onChange={(e) => setN(Number(e.target.value))}
+            min={1}
+            max={250}
+          />
         </div>
+        <div className="matrix-wrapper">
+          {/* Matrix input */}
+          <div className="matrix-box">
+            <h4>Matrix A:</h4>
+            <div className="matrix-input">
+              {A.map((row, i) => (
+                <div key={i} className="matrix-row">
+                  {row.map((val, j) => (
+                    <input
+                      key={`${i}-${j}`}
+                      type="number"
+                      value={val}
+                      onChange={(e) => handleMatrixChange(i, j, e.target.value)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Vector input */}
+          <div className="vector-box">
+            <h4>Vector b:</h4>
+            <div className="vector-input">
+              {b.map((val, i) => (
+                <input
+                  key={i}
+                  type="number"
+                  value={val}
+                  onChange={(e) => handleVectorChange(i, e.target.value)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Buttons */}
         <div>
-          <button className="btn-main" type="submit" disabled={creating}>{creating ? "Creating..." : "Create"}</button>
-          <button className="btn-grey" type="button" onClick={() => navigate("/tasks")}>Back</button>
+          <button className="btn-main" type="submit" disabled={creating}>
+            {creating ? "Creating..." : "Create"}
+          </button>
+          <button
+            className="btn-grey"
+            type="button"
+            onClick={() => navigate("/tasks")}
+          >
+            Back
+          </button>
         </div>
       </form>
     </div>

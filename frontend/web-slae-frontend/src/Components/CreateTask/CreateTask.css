@@ -1,6 +1,5 @@
-/* ===== Create Task Page ===== */
 .create-form {
-    max-width: 500px;
+    max-width: 600px;
     margin: 80px auto;
     background: #fff;
     padding: 40px 20px;
@@ -22,4 +21,31 @@
     margin-left: 8px;
     border-radius: 6px;
     border: 1px solid #aaa;
+}
+
+
+.matrix-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 15px;
+}
+
+.matrix-row {
+  display: flex;
+  gap: 4px;
+}
+
+.matrix-row input,
+.vector-input input {
+  width: 50px;
+  padding: 4px;
+  text-align: center;
+}
+
+.vector-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
 }
