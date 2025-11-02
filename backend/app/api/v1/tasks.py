@@ -38,15 +38,16 @@ def create_task(payload: TaskCreate, current_user: User = Depends(get_current_us
     if active >= MAX_CONCURRENT_TASKS_PER_USER:
         raise HTTPException(status_code=429, detail="too_many_concurrent_tasks")
 
-    if "n" not in payload.params and "values" not in payload.params:
+    if "n" not in payload.params and "values" not in payload.params and "b" not in payload.params:
         n = 100
         payload.params["n"] = n
         payload.params["values"] = [[random.randint(0, 15) for _ in range(n)] for _ in range(n)]
         payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
-    elif 'n' in payload.params:
+    elif 'n' in payload.params and "values" not in payload.params and "b" not in payload.params:
         n = int(payload.params['n'])
         payload.params["values"] = [[random.randint(0, 15) for _ in range(n)] for _ in range(n)]
         payload.params['b'] = [random.randint(-10, 10) for _ in range(n)]
+
 
     complexity, est = compute_complexity(payload.params)
     if complexity > MAX_COMPLEXITY or est > MAX_ESTIMATED_SECONDS:
@@ -181,7 +182,6 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
 @celery_app.task(name="fastapi_long_tasks_example.run_task")
 def run_task(task_id: str):
     print(f"------------------Task is running-----------------")
-    # This runs in worker process
     db = SessionLocal()
     try:
         task = db.query(Task).filter(Task.id == task_id).first()
@@ -191,7 +191,6 @@ def run_task(task_id: str):
 
         if task.status != TaskStatus.PENDING:
             return
-    # re-check complexity
         if task.complexity_metric > MAX_COMPLEXITY:
             task.status = TaskStatus.REJECTED 
             db.commit()
@@ -217,7 +216,7 @@ def run_task(task_id: str):
                 return
             progress = int( (i + 1) / n * 90)
             start_time = time.time()
-            # check cancellation flag in DB
+
             if i % max(1, int(n * 0.05)) == 0:
                 db.expire(task)
                 task = db.query(Task).filter(Task.id == task_id).first()
