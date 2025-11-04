@@ -24,11 +24,10 @@ import numpy as np
 import time
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
-# Redis clients
+
 redis_sync = redis.from_url(REDIS_URL)
 redis_async = aioredis.from_url(REDIS_URL)
 
-# Celery app
 celery_app = Celery("tasks", broker=CELERY_BROKER, backend=CELERY_BACKEND)
 
 @router.post("", status_code=201)
@@ -110,7 +109,6 @@ def cancel_task(task_id: str, current_user: User = Depends(get_current_user), db
 
 @router.websocket("/ws/{task_id}")
 async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = None):
-    # token can be passed as query param: ?token=...
     print("------Trying decode token-------")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -133,7 +131,6 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
     try:
         pubsub = redis_async.pubsub()
         await pubsub.subscribe(channel)
-    # send last-known state from DB
         db = SessionLocal()
 
         try:
@@ -152,7 +149,6 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str, token: str = No
             db.close()
 
         async for message in pubsub.listen():
-    # message: {'type': 'message', 'channel': b'task:...','data': b'...'}
             if message is None:
                 continue
             if message.get("type") != "message":
@@ -263,7 +259,7 @@ def run_task(task_id: str):
             end_time = time.time()
             if (i+1 % (n/10)) == 0:
                 elapsed_time = end_time - start_time
-                estimated_seconds = max(1, elapsed_time * i)
+                estimated_seconds = max(0, elapsed_time * i)
                 
                 task.progress = min(99, progress)
                 task.estimated_seconds = estimated_seconds
@@ -273,7 +269,6 @@ def run_task(task_id: str):
                     json.dumps({"progress": progress, "estimated_seconds": estimated_seconds})
                 )
 
-        # finished
         task.params['result'] = b.tolist()
         task.status = TaskStatus.COMPLETED
         task.progress = 100

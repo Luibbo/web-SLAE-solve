@@ -48,7 +48,7 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         login = payload.get("sub")
-        print("Decoded login from token:", login)  # Debugging line
+        print("Decoded login from token:", login)  
         if login is None:
             raise credentials_exception
         token_data = TokenData(login=login)

@@ -47,7 +47,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER: redis://redis:6379/1
       CELERY_BACKEND: redis://redis:6379/2
-      MAX_COMPLEXITY: 1000000000
+      MAX_COMPLEXITY: 10000000000000
       MAX_ESTIMATED_SECONDS: 3600
     depends_on:
       - postgres

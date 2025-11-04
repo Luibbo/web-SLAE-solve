@@ -16,7 +16,7 @@ def generate_matrix(n: int) -> list[list[int]]:
 
 def read_matrix_from_file(filepath: str) -> list[list[int]]:
     try:
-        matrix = np.loadtxt(filepath, dtype=int) # Use dtype=int for integer matrix
+        matrix = np.loadtxt(filepath, dtype=int)
         return matrix.tolist()
     except FileNotFoundError:
         print("Error: 'matrix.txt' not found.")

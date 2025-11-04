@@ -26,6 +26,3 @@ httpx
 # Робота з даними
 numpy
 scipy
-
-# Тести
-pytest

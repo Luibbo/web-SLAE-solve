@@ -13,7 +13,7 @@ class TaskStatus:
 
 class Task(Base):
     __tablename__ = "tasks"
-    id = Column(String, primary_key=True, index=True) # uuid
+    id = Column(String, primary_key=True, index=True) 
     user_id = Column(Integer, nullable=False, index=True)
     params = Column(JSON, nullable=True)
     status = Column(String, default=TaskStatus.PENDING)
