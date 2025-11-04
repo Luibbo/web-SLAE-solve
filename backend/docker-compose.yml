@@ -42,13 +42,8 @@ services:
   worker:
     build: ./
     command: celery -A app.api.v1.tasks.celery_app worker --loglevel=INFO --concurrency=1
-    environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:luib2006@postgres:5432/webslae
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER: redis://redis:6379/1
-      CELERY_BACKEND: redis://redis:6379/2
-      MAX_COMPLEXITY: 10000000000000
-      MAX_ESTIMATED_SECONDS: 3600
+    env_file:
+      - .env
     depends_on:
       - postgres
       - redis
@@ -65,5 +60,20 @@ services:
       - fastapi1
       - fastapi2
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   pgdata:
+  pgadmin_data:
