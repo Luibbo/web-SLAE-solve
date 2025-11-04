@@ -17,12 +17,10 @@ export default function TaskDetails({ taskId }) {
   useEffect(() => {
     if (!taskId) return;
 
-    // 1️⃣ Завантажуємо початкові дані
     fetchTask(taskId)
       .then(setTask)
       .catch(console.error);
 
-    // 2️⃣ Створюємо WebSocket-з’єднання
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -31,16 +29,16 @@ export default function TaskDetails({ taskId }) {
     );
 
     ws.onopen = () => {
-      console.log("✅ WebSocket connected");
+      console.log("WebSocket connected");
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("📩 WS message:", data);
+        console.log("WS message:", data);
         setTask((prev) => {
           if (!prev) return prev;
-          return { ...prev, ...data }; // оновлюємо статус/прогрес
+          return { ...prev, ...data };
         });
       } catch (err) {
         console.error("Error parsing WS message:", err);
@@ -48,14 +46,13 @@ export default function TaskDetails({ taskId }) {
     };
 
     ws.onclose = () => {
-      console.log("❌ WebSocket closed");
+      console.log("WebSocket closed");
     };
 
     ws.onerror = (err) => {
-      console.error("⚠️ WebSocket error:", err);
+      console.error("WebSocket error:", err);
     };
 
-    // 3️⃣ Закриваємо з’єднання при виході
     return () => {
       ws.close();
     };
@@ -66,7 +63,6 @@ export default function TaskDetails({ taskId }) {
   if (!taskId) return <div>Select a task</div>;
   if (!task) return <div>Loading...</div>;
   const params = task.params ?? null;
-  //console.log("Param.result", params.result)
   return (
     <div>
       <h3 className="header-meta">Task Metadata</h3>
@@ -114,21 +110,19 @@ export default function TaskDetails({ taskId }) {
                 </tbody>
               </table>
             </div>
-            {params.result ? (
             <div className="vector-box">
               <h5>Result:</h5>
               <table>
+                {params.result ? (
                 <tbody>
                   {params.result.map((val, i) => (
                     <tr key={i}>
                       <td>{parseFloat(val).toFixed(4)}</td>
                     </tr>
                   ))}
-                </tbody>
+                </tbody>) : (<div>Result is not available</div>)}
               </table>
-            </div>) : (
-              <div>Evaluating result</div>
-            )}
+            </div>
 
           </div>
         ) : (

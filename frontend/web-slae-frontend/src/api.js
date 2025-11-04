@@ -1,15 +1,10 @@
 const BASE_URL = process.env.REACT_APP_API_URL || "https://localhost/api/v1";
 
-// function getAuthHeaders() {
-//   const token = localStorage.getItem("access_token");
-//   return token ? { Authorization: `Bearer ${token}` } : {};
-// }
-
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   return token
     ? { Authorization: `Bearer ${token}` }
-    : {}; // якщо токена немає
+    : {};
 }
 
 export async function fetchTasks() {
@@ -21,7 +16,7 @@ export async function fetchTasks() {
   });
 
   if (!res.ok) throw new Error(`fetchTasks failed: ${res.status}`);
-  return res.json(); // очікується масив задач
+  return res.json(); 
 }
 
 export async function fetchTask(taskId) {
@@ -53,7 +48,6 @@ export async function createTask(payload) {
 }
 
 export async function cancelTask(taskId) {
-  // Adjust endpoint to your backend: here we use POST /tasks/{id}/cancel
   const res = await fetch(`${BASE_URL}/tasks/${taskId}`, {
     method: "DELETE",
     headers: {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { fetchTasks, fetchTask, cancelTask } from "../../api";
 import { TaskCard } from "../TaskCard/TaskCard";
 import TaskDetails from "../TaskMetadata/TaskMetadata";
+import LogoutButton from "../Logout/Logout";
 import { useNavigate } from "react-router-dom";
 import "./TaskHistory.css"
 
@@ -24,7 +25,6 @@ export default function HomePage() {
 
   useEffect(() => {
     loadTasks();
-    // optional: poll every 5 seconds
     const t = setInterval(loadTasks, 10000);
     return () => clearInterval(t);
   }, []);
@@ -77,7 +77,11 @@ export default function HomePage() {
       </div>
 
       <div className="details-panel">
+          <div>
+            <LogoutButton />
+          </div>
         <h2 className="header">Task Details</h2>
+
         <TaskDetails taskId={selected}/>
         {selected ? (<div>
           <button className="btn-cancell" onClick={() => handleCancel(taskDetail.id)}>Cancel Task</button>

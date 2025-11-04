@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import './LoginSignup.css';
 import email_icon from '../Assets/email.png';
 import password_icon from '../Assets/password.png';
+import { useNavigate } from "react-router-dom";
 
 const LoginSignup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
@@ -18,17 +20,18 @@ const LoginSignup = () => {
       });
 
       const data = await response.json();
-      console.log("✅ Registered:", data);
+      console.log("Registered:", data);
 
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
         alert("Registered successfully!");
+        navigate("/tasks");
       } else {
         alert("Registration failed: No token received.");
       }
 
     } catch (error) {
-      console.error("❌ Registration error:", error);
+      console.error("Registration error:", error);
     }
   };
 
@@ -46,17 +49,18 @@ const LoginSignup = () => {
       });
 
       const data = await response.json();
-      console.log("✅ Logged in:", data);
+      console.log("Logged in:", data);
 
       if (data.access_token) {
         localStorage.setItem("token", data.access_token);
         alert("Login successful!");
+        navigate("/tasks")
       } else {
         alert("Login failed: No token received.");
       }
 
     } catch (error) {
-      console.error("❌ Login error:", error);
+      console.error("Login error:", error);
     }
   };
 

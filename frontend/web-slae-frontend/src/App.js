@@ -1,19 +1,3 @@
-// import './App.css';
-// import LoginSignup from './Components/LoginSignup/LoginSignup';
-
-// function App() {
-//   return (
-//     <div>
-//       <LoginSignup/>
-
-
-//     </div>
-//   );
-// }
-
-// export default App;
-
-
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import LoginSignup from "./Components/LoginSignup/LoginSignup";
@@ -23,17 +7,13 @@ import CreateTask from "./Components/CreateTask/CreateTask";
 function App() {
 return (
 <Router>
-<Routes>
-{/* Сторінка логіну/реєстрації */}
-<Route path="/login" element={<LoginRedirectWrapper />} />
+  <Routes>
+    <Route path="/login" element={<LoginRedirectWrapper />} />
 
-    {/* Головна сторінка (історія тасків) */}
     <Route path="/tasks" element={<TaskHistory />} />
 
-    {/* Сторінка створення таску */}
     <Route path="/create" element={<CreateTask />} />
 
-    {/* Якщо маршрут не знайдено → редірект */}
     <Route path="*" element={<Navigate to="/login" />} />
   </Routes>
 </Router>
@@ -42,18 +22,17 @@ return (
 );
 }
 
-// Окрема компонента, що перевіряє токен і редіректить
 function LoginRedirectWrapper() {
 const navigate = useNavigate();
 
 useEffect(() => {
-const token = localStorage.getItem("ftoken"); // Replace ftoken to token!!!!!!!
-if (token) {
-navigate("/tasks");
-}
-}, [navigate]);
+  const token = localStorage.getItem("token");
+  if (token) {
+    navigate("/tasks");
+    }
+  }, [navigate]);
 
-return <LoginSignup />;
+  return <LoginSignup/>;
 }
 
 export default App;

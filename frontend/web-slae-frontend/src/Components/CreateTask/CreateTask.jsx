@@ -10,48 +10,18 @@ export default function CreateTaskPage() {
   const [b, setB] = useState([]);
   const [creating, setCreating] = useState(false);
 
-  // regenerate empty matrix/vector when n changes
   useEffect(() => {
     setA(Array.from({ length: n }, () => Array(n).fill("")));
     setB(Array.from({ length: n }, () => ""));
   }, [n]);
 
-  // const handleMatrixChange = (i, j, value) => {
-  //   const newA = [...A];
-  //   newA[i][j] = value;
-  //   setA(newA);
+  // const handleSizeChange = (value) => {
+  //   const newN = Number(value);
+  //   setN(newN);
+
+  //   setA(Array(newN).fill(null).map(() => Array(newN).fill("")));
+  //   setB(Array(newN).fill(""));
   // };
-
-  // const handleVectorChange = (i, value) => {
-  //   const newB = [...b];
-  //   newB[i] = value;
-  //   setB(newB);
-  // };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   const payload = { params: { n, values: A, b } };
-
-  //   setCreating(true);
-  //   try {
-  //     const res = await createTask(payload);
-  //     alert("Task created: " + res.task_id);
-  //     navigate("/tasks");
-  //   } catch (err) {
-  //     console.error(err);
-  //     alert("Create failed");
-  //   } finally {
-  //     setCreating(false);
-  //   }
-  // };
-
-  const handleSizeChange = (value) => {
-    const newN = Number(value);
-    setN(newN);
-
-    setA(Array(newN).fill(null).map(() => Array(newN).fill("")));
-    setB(Array(newN).fill(""));
-  };
 
   const handleMatrixChange = (i, j, value) => {
     const updated = [...A];
@@ -99,7 +69,6 @@ export default function CreateTaskPage() {
     <div className="create-form">
       <h2>Create Task</h2>
       <form onSubmit={handleSubmit}>
-        {/* N input */}
         <div>
           <label>n (matrix size): </label>
           <input
@@ -111,7 +80,6 @@ export default function CreateTaskPage() {
           />
         </div>
         <div className="matrix-wrapper">
-          {/* Matrix input */}
           <div className="matrix-box">
             <h4>Matrix A:</h4>
             <div className="matrix-input">
@@ -129,8 +97,6 @@ export default function CreateTaskPage() {
               ))}
             </div>
           </div>
-
-          {/* Vector input */}
           <div className="vector-box">
             <h4>Vector b:</h4>
             <div className="vector-input">
@@ -145,7 +111,6 @@ export default function CreateTaskPage() {
             </div>
           </div>
         </div>
-        {/* Buttons */}
         <div>
           <button className="btn-main" type="submit" disabled={creating}>
             {creating ? "Creating..." : "Create"}
