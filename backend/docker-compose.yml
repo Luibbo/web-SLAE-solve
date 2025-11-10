@@ -41,7 +41,7 @@ services:
 
   worker:
     build: ./
-    command: celery -A app.api.v1.tasks.celery_app worker --loglevel=INFO --concurrency=1
+    command: celery -A app.api.v1.tasks.celery_app worker --loglevel=INFO --concurrency=1 --prefetch-multiplier=1 --pool=solo
     env_file:
       - .env
     depends_on:
