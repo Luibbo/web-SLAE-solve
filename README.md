@@ -114,12 +114,16 @@
 
 1.  **Sign Up / Login**:
     Сторінка авторизації. Користувач вводить Email та Пароль для отримання JWT токена доступу.
+<img width="1900" height="912" alt="image" src="https://github.com/user-attachments/assets/5c2b8aeb-5bd1-4fb0-b693-aaffdf009c7a" />
 
 2.  **Create Task**:
     Сторінка створення нової задачі. Користувач вказує розмір матриці ($n$), та заповнює дані (Матриця A та Вектор b) для розрахунку.
+<img width="1897" height="903" alt="image" src="https://github.com/user-attachments/assets/ab12417a-cc44-455f-9769-d1a837c0eeec" />
 
 3.  **Task Details**:
     Сторінка активної задачі. Показує прогрес виконання у відсотках, розрахунковий час до завершення, метрики складності алгоритму ($O(n^3)$) та кнопку скасування задачі. Статус оновлюється в реальному часі.
+<img width="1916" height="905" alt="image" src="https://github.com/user-attachments/assets/c815fa64-0c9c-4cf7-bfdb-134d90526633" />
 
 4.  **Task History**:
     Загальний список усіх задач користувача. Дозволяє переглянути статус кожної задачі (Completed/Running) та детальні результати обчислень для завершених задач.
+<img width="1918" height="911" alt="image" src="https://github.com/user-attachments/assets/286f06e8-c448-40d7-976d-fa40dd58153a" />
