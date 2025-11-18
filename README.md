@@ -52,8 +52,7 @@
 * **PgAdmin:** Веб-інтерфейс для адміністрування бази даних.
 * **Docker Compose:** Оркестратор, що піднімає та зв'язує всі сервіси в єдину мережу.
 
-<img width="495" height="692" alt="image" src="https://github.com/user-attachments/assets/1caf7fdf-6351-45cf-a5ab-acc9832efd21" />
-
+<img width="507" height="711" alt="image" src="https://github.com/user-attachments/assets/1eb509e9-ffa9-4153-8163-5b2506d665c0" />
 
 ---
 
