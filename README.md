@@ -22,6 +22,7 @@
 
 Проект побудований на сучасному стеку Python з використанням мікросервісних патернів.
 
+**Backend**
 * **Мова:** Python 3.11+
 * **API Framework:** FastAPI (Async)
 * **Background Tasks:** Celery
@@ -30,6 +31,10 @@
 * **Containerization:** Docker, Docker Compose
 * **Web Server:** Nginx
 
+**Frontend**
+* **Мова:** JavaScript
+* **Framework:** React
+  
 **Ключові особливості реалізації:**
 * Load Balancing (балансування навантаження між інстансами API).
 * Dedicated Workers (окремі контейнери для обчислень).
