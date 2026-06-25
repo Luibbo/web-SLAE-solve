@@ -60,8 +60,8 @@ export default function TaskDetails({ taskId }) {
 
 
 
-  if (!taskId) return <div>Select a task</div>;
-  if (!task) return <div>Loading...</div>;
+  if (!taskId) return <div className="meta-empty">Select a task to view its details</div>;
+  if (!task) return <div className="meta-empty">Loading…</div>;
   const params = task.params ?? null;
   return (
     <div>

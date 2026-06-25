@@ -77,15 +77,17 @@ export default function HomePage() {
       </div>
 
       <div className="details-panel">
-          <div>
-            <LogoutButton />
-          </div>
-        <h2 className="header">Task Details</h2>
+        <div className="details-topbar">
+          <h2 className="details-title">Task Details</h2>
+          <LogoutButton />
+        </div>
 
         <TaskDetails taskId={selected}/>
-        {selected ? (<div>
-          <button className="btn-cancell" onClick={() => handleCancel(taskDetail.id)}>Cancel Task</button>
-        </div>) : (<div></div>)}
+        {selected ? (
+          <div className="details-footer">
+            <button className="btn-cancell" onClick={() => handleCancel(taskDetail.id)}>Cancel Task</button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
