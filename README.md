@@ -51,6 +51,7 @@ The system is designed for scalability and fault tolerance:
 * **Worker:** A separate Celery container dedicated solely to "chewing through" heavy mathematical tasks, so it doesn't load the main API services.
 * **PgAdmin:** Web interface for database administration.
 * **Docker Compose:** Orchestrator that brings up and connects all services into a single network.
+
 <img width="495" height="692" alt="image" src="https://github.com/user-attachments/assets/1caf7fdf-6351-45cf-a5ab-acc9832efd21" />
 
 ---
