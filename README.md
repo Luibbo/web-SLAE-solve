@@ -1,28 +1,28 @@
 # Solve Complex Task
 
-Сервіс для виконання складних обчислювальних задач у фоновому режимі з моніторингом у реальному часі.
+A service for running heavy computational tasks in the background with real-time monitoring.
 
 ---
 
-## Про сервіс
+## About
 
-**Solve Complex Task** — це веб-платформа, розроблена для вирішення проблеми блокування інтерфейсу під час виконання важких математичних операцій.
+**Solve Complex Task** is a web platform built to solve the problem of UI blocking during heavy mathematical operations.
 
-Сервіс дозволяє користувачам створювати ресурсоємні задачі (наприклад, розв'язання систем лінійних рівнянь великої розмірності), які делегуються на виконання у фонові процеси.
+It lets users create resource-intensive tasks (for example, solving large systems of linear equations) that are delegated to background processes for execution.
 
-**Ключові можливості:**
-* **Асинхронність:** Важкі обчислення не впливають на чуйність веб-інтерфейсу.
-* **Real-time прогрес:** Користувач бачить відсоток виконання та прогнозований час завершення завдяки WebSocket з'єднанню.
-* **Безпека:** Реєстрація та авторизація через JWT токени.
-* **Історія:** Збереження всіх задач, їх параметрів та результатів.
+**Key features:**
+* **Asynchronous:** Heavy computations don't affect the responsiveness of the web interface.
+* **Real-time progress:** Users see the completion percentage and the estimated time to finish thanks to a WebSocket connection.
+* **Security:** Registration and authorization via JWT tokens.
+* **History:** All tasks, their parameters, and their results are persisted.
 
 ---
 
-## Технологічний стек
+## Tech Stack
 
-Проект побудований на сучасному стеку Python з використанням мікросервісних патернів.
+The project is built on a modern Python stack using microservice patterns.
 
-* **Мова:** Python 3.11+
+* **Language:** Python 3.11+
 * **API Framework:** FastAPI (Async)
 * **Background Tasks:** Celery
 * **Broker & Cache:** Redis
@@ -30,103 +30,127 @@
 * **Containerization:** Docker, Docker Compose
 * **Web Server:** Nginx
 
-**Ключові особливості реалізації:**
-* Load Balancing (балансування навантаження між інстансами API).
-* Dedicated Workers (окремі контейнери для обчислень).
-* Database Migrations (Alembic).
-* SSL Encryption (HTTPS).
+**Key implementation details:**
+* Load balancing across API instances.
+* Dedicated workers (separate containers for computation).
+* Database migrations (Alembic).
+* SSL encryption (HTTPS).
 
 ---
 
-## Архітектура
+## Architecture
 
-Система спроектована для забезпечення масштабованості та відмовостійкості:
+The system is designed for scalability and fault tolerance:
 
-* **FastAPI1 та FastAPI2:** Два ідентичні контейнери з основним додатком. Це реалізація горизонтального масштабування (horizontal scaling) для обробки більшої кількості HTTP-запитів.
-* **Nginx:** Виконує роль Reverse Proxy та Load Balancer'а. Приймає вхідний трафік, забезпечує SSL-термінацію та розподіляє запити між `FastAPI1` та `FastAPI2`.
+* **FastAPI1 and FastAPI2:** Two identical containers running the main application. This implements horizontal scaling to handle a larger number of HTTP requests.
+* **Nginx:** Acts as a reverse proxy and load balancer. It accepts incoming traffic, handles SSL termination, and distributes requests between `FastAPI1` and `FastAPI2`.
 * **Redis:**
-    * Брокер повідомлень для Celery (черга задач).
-    * Pub/Sub механізм для передачі статусів виконання задач у WebSocket-канали в реальному часі.
-* **PostgreSQL:** Реляційна база даних для зберігання користувачів та метаданих задач.
-* **Worker:** Окремий контейнер із Celery, який займається виключно "пережовуванням" важких математичних задач, не навантажуючи основні API-сервіси.
-* **PgAdmin:** Веб-інтерфейс для адміністрування бази даних.
-* **Docker Compose:** Оркестратор, що піднімає та зв'язує всі сервіси в єдину мережу.
-
+    * Message broker for Celery (the task queue).
+    * Pub/Sub mechanism for delivering task execution statuses to WebSocket channels in real time.
+* **PostgreSQL:** Relational database for storing users and task metadata.
+* **Worker:** A separate Celery container dedicated solely to "chewing through" heavy mathematical tasks, so it doesn't load the main API services.
+* **PgAdmin:** Web interface for database administration.
+* **Docker Compose:** Orchestrator that brings up and connects all services into a single network.
 <img width="495" height="692" alt="image" src="https://github.com/user-attachments/assets/1caf7fdf-6351-45cf-a5ab-acc9832efd21" />
 
+---
+
+## Design Decisions
+
+Why the infrastructure is set up the way it is:
+
+1.  **Why two FastAPI containers?**
+    For fault tolerance and load distribution. If one container goes down or gets overloaded, Nginx redirects the request to the other.
+
+2.  **Why is `RUN_MIGRATIONS` set to "true" on only one instance?**
+    The `RUN_MIGRATIONS` environment variable controls whether database migrations (Alembic) run on startup. It is enabled only on `fastapi1` to avoid a race condition where two services try to modify the database schema simultaneously, which could cause errors.
+
+3.  **Why `prefetch-multiplier=1` for the worker?**
+    This Celery setting forces a worker to take exactly one task from the queue at a time. Since tasks are heavy and long-running (CPU-bound), we don't want a single worker to "reserve" several tasks in advance and block other workers from executing them.
+
+4.  **Why `pool=solo`?**
+    The `solo` execution pool is used so a task runs in the same process without forking child processes. This reduces resource overhead and simplifies monitoring for single heavy computations.
+
+5.  **How does SSL work?**
+    Self-signed certificates generated locally are used. Nginx is configured to listen on port 443, encrypt the traffic, and proxy it to the applications' internal HTTP ports.
 
 ---
 
-## Технічні рішення та пояснення
+## Running the Project
 
-Чому інфраструктура налаштована саме так:
+### Prerequisites
 
-1.  **Чому два FastAPI-контейнери?**
-    Для відмовостійкості та розподілу навантаження. Якщо один контейнер впаде або буде перевантажений, Nginx перенаправить запит на інший.
+* [Docker](https://docs.docker.com/get-docker/) and Docker Compose.
+* Ports `80`, `443`, and `5050` free on the local machine.
 
-2.  **Чому `RUN_MIGRATIONS` "true" лише в одному інстансі?**
-    Змінна оточення `RUN_MIGRATIONS` контролює запуск міграцій бази даних (Alembic) при старті. Вона включена тільки на `fastapi1`, щоб уникнути стану гонки (race condition), коли два сервіси одночасно намагаються змінити структуру БД, що може призвести до помилок.
+### Steps
 
-3.  **Чому `prefetch-multiplier=1` для воркера?**
-    Це налаштування Celery змушує воркера брати зі черги рівно одну задачу за раз. Оскільки задачі важкі і тривалі (CPU-bound), нам не потрібно, щоб один воркер "бронював" собі кілька задач наперед, блокуючи їх виконання іншими потенційними воркерами.
+1.  **Clone the repository**
+    ```bash
+    git clone <repo_url>
+    cd web-SLAE-solve
+    ```
 
-4.  **Чому `pool=solo`?**
-    Використовується пул виконання `solo`, щоб задача виконувалася в тому ж процесі без створення дочірніх процесів (forking). Це зменшує оверхед (накладні витрати) ресурсів і спрощує моніторинг для поодиноких важких обчислень.
+2.  **Configure environment variables**
+    The infrastructure lives in the `backend/` directory. Move into it and create a `.env` file based on `.env.example`:
+    ```bash
+    cd backend
+    cp .env.example .env
+    ```
 
-5.  **Як працює SSL?**
-    Використовуються self-signed (самопідписані) сертифікати, згенеровані локально. Nginx налаштований слухати 443 порт, шифрувати трафік і проксувати його на внутрішні HTTP-порти додатків.
-
----
-
-## Запуск проекту
-
-Щоб розгорнути проект локально:
-
-1.  **Клонування репозиторію**
-    `git clone <repo_url>`
-
-2.  **Налаштування змінних оточення**
-    Створіть файл `.env` на основі `.env.example`.
-
-3.  **Запуск контейнерів**
-    Виконайте команду для збірки та запуску:
+3.  **Start the containers**
+    Run the build-and-start command from the `backend/` directory. Replace `N` with the desired number of workers, e.g. `--scale worker=3`:
     ```bash
     docker-compose up --scale worker=N -d --build
     ```
 
-4.  **Доступні порти**
-    * Web UI / API: `https://localhost` (порт 443) або `http://localhost` (порт 80)
-    * PgAdmin: `http://localhost:5050`
+    > **Note:** on newer Docker versions the command is written with a space — `docker compose ...`.
+
+### Available Ports
+
+| Service | Address |
+| --- | --- |
+| Web UI / API (HTTPS) | `https://localhost` (port 443) |
+| Web UI / API (HTTP) | `http://localhost` (port 80) |
+| PgAdmin | `http://localhost:5050` |
+
+> **SSL:** Self-signed certificates are used, so the first time you open `https://localhost` the browser will show a security warning. This is expected — accept the certificate and continue.
+
+### Useful Commands
+
+```bash
+docker-compose ps              # list running containers
+docker-compose logs -f         # follow logs from all services
+docker-compose logs -f worker  # follow worker logs only
+docker-compose down            # stop and remove containers
+docker-compose down -v         # also remove volumes (wipes the database)
+```
 
 ---
 
-## Структура директорій
+## Directory Structure
 
-Короткий огляд організації коду:
+A brief overview of how the code is organized:
 
-* **`app/`**: Основна директорія з вихідним кодом Python.
-    * Містить логіку API (routes), налаштування безпеки (auth), моделі даних (models/schemas) та бізнес-логіку обчислень.
-* **`nginx.conf`**: Конфігураційний файл для Nginx (налаштування проксі, SSL, апстрімів).
-* **`docker-compose.yml`**: Опис інфраструктури, сервісів, мереж та томів (volumes).
+* **`app/`**: Main directory with the Python source code.
+    * Contains the API logic (routes), security setup (auth), data models (models/schemas), and the computation business logic.
+* **`nginx.conf`**: Nginx configuration file (proxy, SSL, and upstream settings).
+* **`docker-compose.yml`**: Description of the infrastructure — services, networks, and volumes.
 
 ---
 
 ## Frontend / UI
 
-Опис інтерфейсу користувача:
+An overview of the user interface:
 
-1.  **Sign Up / Login**:
-    Сторінка авторизації. Користувач вводить Email та Пароль для отримання JWT токена доступу.
-<img width="1900" height="912" alt="image" src="https://github.com/user-attachments/assets/5c2b8aeb-5bd1-4fb0-b693-aaffdf009c7a" />
+1.  **Sign Up / Login**
+    Authorization page. The user enters an email and password to obtain a JWT access token.
 
-2.  **Create Task**:
-    Сторінка створення нової задачі. Користувач вказує розмір матриці ($n$), та заповнює дані (Матриця A та Вектор b) для розрахунку.
-<img width="1897" height="903" alt="image" src="https://github.com/user-attachments/assets/ab12417a-cc44-455f-9769-d1a837c0eeec" />
+2.  **Create Task**
+    New task creation page. The user specifies the matrix size (`n`) and fills in the data (matrix A and vector b) for the calculation.
 
-3.  **Task Details**:
-    Сторінка активної задачі. Показує прогрес виконання у відсотках, розрахунковий час до завершення, метрики складності алгоритму ($O(n^3)$) та кнопку скасування задачі. Статус оновлюється в реальному часі.
-<img width="1916" height="905" alt="image" src="https://github.com/user-attachments/assets/c815fa64-0c9c-4cf7-bfdb-134d90526633" />
+3.  **Task Details**
+    Active task page. Shows execution progress as a percentage, the estimated time to completion, the algorithm complexity metric (`O(n^3)`), and a cancel button. The status updates in real time.
 
-4.  **Task History**:
-    Загальний список усіх задач користувача. Дозволяє переглянути статус кожної задачі (Completed/Running) та детальні результати обчислень для завершених задач.
-<img width="1918" height="911" alt="image" src="https://github.com/user-attachments/assets/286f06e8-c448-40d7-976d-fa40dd58153a" />
+4.  **Task History**
+    A list of all of the user's tasks. Lets you review the status of each task (Completed/Running) and the detailed computation results for finished tasks.
