@@ -1,8 +1,8 @@
-# Solve Complex Task
+# Solve Complex Task 
 
 A service for running heavy computational tasks in the background with real-time monitoring.
 
----
+-----
 
 ## About
 
@@ -16,7 +16,10 @@ It lets users create resource-intensive tasks (for example, solving large system
 * **Security:** Registration and authorization via JWT tokens.
 * **History:** All tasks, their parameters, and their results are persisted.
 
----
+  * **Asynchronous Processing:** Heavy calculations do not affect the responsiveness of the web interface.
+  * **Real-time Progress:** Users see the completion percentage and estimated time remaining via WebSocket connections.
+  * **Security:** Registration and authentication via JWT tokens.
+  * **History:** Persistent storage of all tasks, their parameters, and calculation results.
 
 ## Tech Stack
 
@@ -36,7 +39,13 @@ The project is built on a modern Python stack using microservice patterns.
 * Database migrations (Alembic).
 * SSL encryption (HTTPS).
 
----
+  * **Language:** Python 3.11+
+  * **API Framework:** FastAPI (Async)
+  * **Background Tasks:** Celery
+  * **Broker & Cache:** Redis
+  * **Database:** PostgreSQL
+  * **Containerization:** Docker, Docker Compose
+  * **Web Server:** Nginx
 
 ## Architecture
 
@@ -52,7 +61,18 @@ The system is designed for scalability and fault tolerance:
 * **PgAdmin:** Web interface for database administration.
 * **Docker Compose:** Orchestrator that brings up and connects all services into a single network.
 
-<img width="495" height="692" alt="image" src="https://github.com/user-attachments/assets/1caf7fdf-6351-45cf-a5ab-acc9832efd21" />
+  * **Load Balancing:** Distributes traffic between API instances.
+  * **Dedicated Workers:** Isolated containers for computations.
+  * **Database Migrations:** Managed by Alembic.
+  * **SSL Encryption:** HTTPS support via Nginx.
+
+-----
+
+##  Architecture
+
+The system is designed for scalability and fault tolerance:
+
+<img width="476" height="718" alt="image" src="https://github.com/user-attachments/assets/eaa6f30c-d6f6-4202-9774-4d2afa8af787" />
 
 ---
 
@@ -75,7 +95,15 @@ Why the infrastructure is set up the way it is:
 5.  **How does SSL work?**
     Self-signed certificates generated locally are used. Nginx is configured to listen on port 443, encrypt the traffic, and proxy it to the applications' internal HTTP ports.
 
----
+  * **FastAPI1 & FastAPI2:** Two identical containers running the main application. This implements **horizontal scaling** to handle a higher volume of HTTP requests.
+  * **Nginx:** Acts as a Reverse Proxy and Load Balancer. It accepts incoming traffic, handles SSL termination, and distributes requests between `FastAPI1` and `FastAPI2`.
+  * **Redis:**
+      * Message Broker for Celery (Task Queue).
+      * Pub/Sub mechanism for pushing task status updates to WebSocket channels in real-time.
+  * **PostgreSQL:** Relational database for storing user data and task metadata.
+  * **Worker:** A dedicated container running Celery that exclusively processes ("crunches") heavy mathematical tasks without burdening the main API services.
+  * **PgAdmin:** Web interface for database administration.
+  * **Docker Compose:** Orchestrator that spins up and links all services into a unified network.
 
 ## Running the Project
 
@@ -127,7 +155,7 @@ docker-compose down            # stop and remove containers
 docker-compose down -v         # also remove volumes (wipes the database)
 ```
 
----
+4.  **Access Points**
 
 ## Directory Structure
 
@@ -138,9 +166,12 @@ A brief overview of how the code is organized:
 * **`nginx.conf`**: Nginx configuration file (proxy, SSL, and upstream settings).
 * **`docker-compose.yml`**: Description of the infrastructure — services, networks, and volumes.
 
----
+A brief overview of the code organization:
 
-## Frontend / UI
+  * **`app/`**: Main Python source code directory.
+      * Contains API logic (`routes`), security settings (`auth`), data models (`models`/`schemas`), and computation business logic.
+  * **`nginx.conf`**: Configuration file for Nginx (proxy settings, SSL, upstreams).
+  * **`docker-compose.yml`**: Infrastructure description, defining services, networks, and volumes.
 
 An overview of the user interface:
 
